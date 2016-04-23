@@ -1,2 +1,2 @@
 # CS33
-Computer Organization
+UCLA CS33:Computer Organization
