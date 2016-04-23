@@ -1,0 +1,58 @@
+Answers
+
+5.In the thttpd-sp, the lines that caused the failure were:
+
+0x0804b11b <read_config+27>:	push   $0x8055e49
+0x0804b120 <read_config+32>:	push   %ebx
+0x0804b121 <read_config+33>:	call   0x80499e8 <fopen@plt>
+0x080499e8 <fopen@plt+0>:	jmp    *0x805e808
+0x080499ee <fopen@plt+6>:	push   $0x1c0
+0x080499f3 <fopen@plt+11>:	jmp    0x8049658
+
+0x08049658 in ?? ()
+=> 0x08049658:	pushl  0x805e720
+
+At the ending jump, this assembly jumps to an area of bad code that breaks the code and causes the segmentation fault. 
+This is due to essential code being overridden in the config file that was passed in. 
+
+6. In the thttpd-as, the lines that caused the faliure were:
+
+0x0804da1f <read_config+95>:	push   $0x8069ea0
+0x0804da24 <read_config+100>:	push   %ebx
+0x0804da25 <read_config+101>:	call   0x804a124 <fopen@plt>
+0x0804a124 <fopen@plt+0>:	jmp    *0x8082c74
+0x0804a12a <fopen@plt+6>:	push   $0x250
+0x0804a12f <fopen@plt+11>:	jmp    0x8049c74
+
+0x08049c74 in ?? ()
+=> 0x08049c74:	ff 35 44 2b 08 08	pushl  0x8082b44
+
+With this last jump, the function was taken to an unknown location that causes the program to behave not as intended and eventual crash.
+ This is presumably because the input string was too large for the program and simply went past the end of the array so when that position was called, it led to broken code.
+
+7. In the thttpd-no, the lines that caused the failure were
+
+0x0804afcc <read_config+12>:	push   $0x8055949
+0x0804afd1 <read_config+17>:	push   %eax
+0x0804afd2 <read_config+18>:	call   0x804999c <fopen@plt
+0x0804999c <fopen@plt+0>:	jmp    *0x805e468
+0x080499a2 <fopen@plt+6>:	push   $0x1c0
+0x080499a7 <fopen@plt+11>:	jmp    0x804960c
+
+0x0804960c in ?? ()
+=> 0x0804960c:	ff 35 80 e3 05 08	pushl  0x805e380
+
+This failed for the same reason as the sp file as the same config file was used to crash it. Essential code was overridden through the port declaration.
+
+8. 
+For the no variant, nothing is done to prevent code from a buffer overflow or malicious code because the no variant is complied without any protection like the sp or as variants have.
+
+For the sp variant, one would expect canaries to be placed in the code at certain places but, there is no areas where
+ a buffer overflow can occur so the sp variant does not change the code at all from the no variant and therefore does nothing to help.
+
+For the as variant, the program is checked whether a something is called after it has been freed or if something is called out of bounds. 
+If it finds an instance of this, the code immediately crashes.
+ It accomplishes this through the use of shadow memory and frequently checks this throughout and that is apparent with the large amount of assembly code.
+
+
+

@@ -1,0 +1,41 @@
+Jack Storch
+304483390
+
+Log
+
+gdb --args ~eggert/bin32/bin/emacs-24.5 -batch -eval '(print (* 37 -26))'
+This line brings the code into gdb to begin debugging.
+
+(gdb) set disassemble-next-line on
+(gdb) break Ftimes
+These two lines then allow a break and a dissasemble to happen at the beginning of Ftimes so one can scan through it.
+
+(gdb) run
+Run the program to the first break.
+
+(gdb) si
+(gdb) info reg
+Then a constant stream of these two would bring up a list of the machine instructions along with the appropriate information about what was going on with each register.
+
+gdb --args ~eggert/bin64/bin/emacs-24.5 -batch -eval '(print (* 37 -26))'
+Now I typed this in to get the code for trace 2
+
+(gdb) set disassemble-next-line on
+(gdb) break Ftimes
+(gdb) run
+I repeated these lines in order to do the same thing I did for the first trace
+
+(gdb) si
+(gdb) info reg
+Then this again to get another stream of the information I needed
+
+gdb --args ~eggert/bin32/bin/emacs-24.5 -batch -eval '(print (* most-positive-fixnum most-positive-fixnum))'
+Did this to get the third trace. then did the same thing as the other two to get all the information
+
+next to compile the code given to us using the three different compiling constraints I typed in 
+gcc -m32 -O2 filename.c
+gcc -m32 -O2 -ftrapv filename.c
+gcc -m32 -O2 -fwrapv filename.c 
+to get a runable file proceeded by:
+objdump -d a.out 
+in order to dissasemble the code to look at the function

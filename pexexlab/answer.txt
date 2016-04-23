@@ -1,0 +1,58 @@
+1. When the function goes through this line:
+
+0x081209b9<arith_driver+153>lisp.h:701	sar $0x2,%ecx	ecx=0x1fffffff
+
+it shifts the value at ecx right 2 giving that value in ecx. In trace1 however, when this line is called the same thing happened except this gives a leading one instead of a leading zero meaning it is negative for trace 1. Later in these line:
+
+0x08120a80<arith_driver+352>data.c:2638	test %ecx,%ecx
+0x08120a82<arith_driver+354>data.c:2638	js 0x8120b50<arith_driver+560>
+
+The function jumps based off the sign bit and doesnt do so for trace1 like it does in trace3. This then takes it to this line:
+
+0x08120aab<arith_driver+395>data.c:2640	imul %ecx,%esi	esi=0xc0000001
+
+which multiples 0x1fffffff with itself and gives the wrong answer because there isnt enough room to store the whole answer. This then makes the answer wrong later on. This had to do with the fact that the number was too large.
+
+2. Trace2 is the fastest of the three primarily because it has access to twice as many registers as the other two do as it is a 64 bit console. With all these extra registers there is no need to store things into memory or take things out of memory as often thus making it much faster.
+
+3. trace1 has 103 instructions, trace2 has 107 instructions, and trace3 has 101 instructions. But, when looking at instructions that make code run slower(div, imul, cmove, storing and accesing memory, jumps, etc.), trace3 would be the slowest(if it is included since it doesnt actually work) with trace1 being next.
+
+4. First, the line "BITS_PER_INT  = CHAR_BIT * sizeof (int)" means BITS_PER_INT is equal to 32.
+Next, these lines:
+/* Number of bits in a Lisp_Object tag.  This can be used in #if,
+       and for GDB's sake also as a regular symbol.  */
+    GCTYPEBITS = 3
+/* Number of bits in a Lisp_Object value, not counting the tag.  */
+    VALBITS = BITS_PER_EMACS_INT - GCTYPEBITS,
+    /* Number of bits in a Lisp fixnum value, not counting the tag.  */
+    FIXNUM_BITS = VALBITS + 1
+makes the FIXNUM_BITS equal to 30 which is the number of bits in a Emacs int.
+Finally this line:
+/* Lisp integers use 2 tags, to give them one extra bit, thus
+   extending their range from, e.g., -2^28..2^28-1 to -2^29..2^29-1.  */
+Although there are 30 bits. there are 2 tag bits, one is a sign bit thus giving the max value to be 2^29-1 which is the same as 536870911
+
+5. The two excutable files are not affected by ftrapv since, with -O2 optimization, the piece that actually traps is taken out so it has no effect on the code.
+
+6. Yes -fwrapv will effect the code. While -fwrapv only effects the answer when numbers actually overflow, it also changes the code by making the compiler know of and have to implement code to check for overflow. In the code we had to compile for this lab, it showed that when a compiler must implement -fwrapv mechanics, it must change things in order to prep for this overflow, whether or not overflow actually occurs. 
+
+7. In Emacs, if the function multiplies two numbers, it goes through this code:
+case Amult:
+          if (INT_MULTIPLY_OVERFLOW (accum, next))
+            {
+              EMACS_UINT a = accum, b = next, ab = a * b;
+              overflow = 1;
+              accum = ab & INTMASK;
+            }
+          else
+            accum *= next;
+          break;
+This code shows that every time it multiplies it must check for overflow before it decides to multiply. If you do fwrapv then one no longer needs to worry about this since the wrap rules will take care of that for you. Therefore we could tell it to just multiply instead of check.
+
+8. Cutting down on this would make the multiplication much faster because it is inside a loop and therefore you are not only just cutting off one overflow check, but many different overflow checks.
+
+
+
+
+
+

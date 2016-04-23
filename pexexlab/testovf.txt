@@ -1,0 +1,26 @@
+(1)Compiling the code with -O2 optimization gave a returned a value of 0 meaning the statement was false. It then gave assembly code of:
+ 
+ 8048420:	31 c0                	xor    %eax,%eax
+ 8048422:	c3                   	ret    
+
+(2)Compiling the code with -ftrapv gave a returned value of 1 meaning the statement was true. It then gave assebly code of:
+
+804840c:	8d 50 01             	lea    0x1(%eax),%edx
+804840f:	39 d0                	cmp    %edx,%eax
+8048411:	0f 9f c0             	setg   %al
+8048414:	0f b6 c0             	movzbl %al,%eax
+8048417:	c3                   	ret 
+
+(3)Compiling the code with -fwrapv gave a returned value of 1 meaning the statement was true. It then gave assebly code of:
+
+80483d9:	8d 50 01             	lea    0x1(%eax),%edx
+80483dc:	39 d0                	cmp    %edx,%eax
+80483de:	0f 9f c0             	setg   %al
+80483e1:	0f b6 c0             	movzbl %al,%eax
+80483e4:	c3                   	ret   
+
+When the code is optimized with -O2, the compiler knows that this function should always evaluate to false even if the value is int_max because x+1 is always greater than x it knows it doesnt matter if it overflows or not.
+When the function is compiled with -ftrapv under -O0 optimization, the function succesfully traps and aborts when overflow occurs. However when the function is compiled under -ftrapv and -O2 optimization, the function optimizes out the actual trap which is contained in this line:
+804840a:	e8 41 00 00 00       	call   8048450 <__addvsi3>
+and optimizes to the point where it does the wrong thing under the circumstance and essintially wraps instead. 
+When the code is compiled using -fwrapv and -O2 optimization, the function succesfully wraps and returns true since int_max+1 < int_max under -fwrapv

